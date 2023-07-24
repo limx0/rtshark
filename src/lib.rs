@@ -468,6 +468,7 @@ impl<'a> RTSharkBuilder {
             display_filter: "",
             env_path: "",
             output_path: "",
+            override_prefs: vec![],
             decode_as: vec![],
         }
     }
@@ -493,6 +494,8 @@ pub struct RTSharkBuilderReady<'a> {
     output_path: &'a str,
     /// decode_as : let TShark to decode as this expression
     decode_as: Vec<&'a str>,
+    /// override_prefs : override preferences with this expression
+    override_prefs: Vec<&'a str>,
 }
 
 impl<'a> RTSharkBuilderReady<'a> {
@@ -624,6 +627,12 @@ impl<'a> RTSharkBuilderReady<'a> {
         new
     }
 
+    pub fn override_prefs(&self, expr: &'a str) -> Self {
+        let mut new = self.clone();
+        new.override_prefs.push(expr);
+        new
+    }
+
     /// Starts a new TShark process given the provided parameters, mapped to a new [RTShark] instance.
     /// This function may fail if tshark binary is not in PATH or if there are some issues with input_path parameter : not found or no read permission...
     /// In other cases (output_path not writable, invalid syntax for pcap_filter or display_filter),
@@ -680,6 +689,12 @@ impl<'a> RTSharkBuilderReady<'a> {
         if !self.decode_as.is_empty() {
             for elm in self.decode_as.iter() {
                 tshark_params.extend(&["-d", elm]);
+            }
+        }
+
+        if !self.override_prefs.is_empty() {
+            for elm in self.override_prefs.iter() {
+                tshark_params.extend(&["-o", elm]);
             }
         }
 
@@ -2143,4 +2158,17 @@ mod tests {
         /* remove fifo & tempdir */
         tmp_dir.close().expect("Error deleting fifo dir");
     }
+
+    #[test]
+    fn test_rtshark_override_prefs() {
+
+        // 1. a first run without decode_as option
+
+        // spawn tshark on it
+        let builder = RTSharkBuilder::builder()
+            .input_path("en8")
+            .override_prefs("tls.keylog_file:/home/romain/.sslkeylog");
+
+    }
+
 }
